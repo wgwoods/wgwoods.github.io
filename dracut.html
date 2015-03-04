@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+        <title>TITLE HERE</title>
+        <link rel="stylesheet" href="reveal.js/css/reveal.css">
+        <link rel="stylesheet" href="reveal.js/css/theme/black.css" id="theme">
+        <!-- Code syntax highlighting -->
+        <link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
+
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+            <section data-separator="^\n---\n"
+                     data-separator-vertical="^\n,,,\n"
+                     data-separator-notes="^NOTE:"
+                     data-charset="utf-8"
+                     data-markdown>
+            <script type="text/template">
+<!-- MARKDOWN HERE, YALLLLLL -->
+
+## Dracut and Friends
+_~or~_
+## How Booting Works
+
+---
+
+# What's Dracut?
+
+<!-- .element class="fragment" -->
+An event-driven _initramfs_ framework.
+
+<!-- .element class="fragment" -->
+It finds and mounts a root filesystem, then starts `init`.
+
+<!-- .element class="fragment" -->
+_This can be a lot more complicated than it sounds._
+
+,,,
+
+## No I mean what's "Dracut"
+
+* Named after Dracut, Massachusetts
+* We did this a bunch
+* Plymouth <!-- .element class="fragment" -->
+* Wayland <!-- .element class="fragment" -->
+* Weston <!-- .element class="fragment" -->
+
+,,,
+
+## Pronunciation
+
+<span class="fragment">*dre*</span> <span class="fragment">kit</span>
+
+,,,
+
+## It could have been worse
+
+<div style="-webkit-column-count:3; -webkit-column-gap: 50%;">
+    <p class="fragment">Athol</p>
+    <p class="fragment">Billerica</p>
+    <p class="fragment">Braintree</p>
+    <p class="fragment">Chicopee</p>
+    <p class="fragment">Groton</p>
+    <p class="fragment">Haverhill</p>
+    <p class="fragment">Leicester</p>
+    <p class="fragment">Leominster</p>
+    <p class="fragment">Pepperell</p>
+    <p class="fragment">Scituate</p>
+    <p class="fragment">Taunton</p>
+    <p class="fragment">Woburn</p>
+</div>
+
+---
+
+# So what's _initramfs_
+
+,,,
+
+## initramfs
+
+* Short for "initial RAM filesystem"
+* CPIO archive(s), embedded into kernel image or loaded by bootloader
+* Contains all the stuff you need to find your root filesystem
+* At boot, kernel decompresses & extracts initramfs image(s) into _rootfs_
+
+Note: The kernel will happily decompress and extract a sequence of concatenated
+initramfs images, even if they are compressed with different algorithms.
+This is funky because `xz`, `gzip`, `lzo`, etc. _won't_ do this for you!
+Someone oughtta write a tool that can extract these things for you...
+
+,,,
+
+## What's rootfs
+
+* A special tmpfs that's always mounted
+* Kind of like PID 1: always there, can't be killed
+
+> "You can't unmount rootfs for approximately the same reason you can't kill
+> the init process; rather than having special code to check for and handle an
+> empty list, it's smaller and simpler for the kernel to just make sure certain
+> lists can't become empty."
+
+[Documentation/filesystems/ramfs-rootfs-initramfs.txt]
+(https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt)
+
+,,,
+
+## Are _initrd_ and _initramfs_ the same thing?
+
+Yes.¹
+
+¹Technically, no, but it doesn't matter.
+
+Note: _initrd_ technically refers to an older implementation of this idea, where
+the image needed to be an _uncompressed filesystem image_ (usually ext2). But
+unless you're dealing with 2.4.x kernels this isn't relevant.
+
+---
+
+# How does `dracut` work?
+
+`systemd` and `udev` (just like a normal system!)
+
+_PLUS:_ a big heap of shell scripts!!
+
+,,,
+
+## Broad overview
+
+1. Start `systemd`
+1. Start `udevd`
+1. Probe devices (`udevadm trigger`)
+1. _Mainloop:_ Set up devices as they appear
+1. Mount root filesystem at `/sysroot`
+1. Pivot to new root and start real `init`
+
+,,,
+
+## Seven script hooks
+
+Hook&nbsp;Name | Purpose
+---------------|----------------------
+cmdline        | Parse boot arguments; set `$root`
+pre-udev       | Write udev rules
+pre-trigger    | Prep for initqueue (`udevd` running)
+initqueue      | Handle events, set up devices, find root
+pre-mount      | Prepare to mount root device
+pre-pivot      | Final setup (root mounted at `/sysroot`)
+cleanup        | Clean up temporary files
+
+---
+
+# That doesn't sound complicated
+
+<!-- THAT'S THE END -->
+            </script>
+            </section>
+            </div>
+        </div>
+        <script src="reveal.js/lib/js/head.min.js"></script>
+        <script src="reveal.js/js/reveal.js"></script>
+        <script>
+            // Config!!!! YES
+            Reveal.initialize({
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+                transition: 'slide',
+                dependencies: [
+                    { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
+                    { src: 'reveal.js/plugin/notes/notes.js', async: true }
+                ]
+            });
+        </script>
+    </body>
+</html>
