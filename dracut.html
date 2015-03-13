@@ -82,29 +82,13 @@ _This can be a lot more complicated than it sounds._
 ## initramfs
 
 * Short for "initial RAM filesystem"
-* CPIO archive(s), embedded into kernel image or loaded by bootloader
-* Contains all the stuff you need to find your root filesystem
-* At boot, kernel decompresses & extracts initramfs image(s) into _rootfs_
+* CPIO archive loaded into RAM by bootloader
+   * and/or embedded into kernel image
+* Contains everything you need to find your root filesystem
+* At boot, kernel decompresses & extracts initramfs into _rootfs_
 
-Note: The kernel will happily decompress and extract a sequence of concatenated
-initramfs images, even if they are compressed with different algorithms.
-This is funky because `xz`, `gzip`, `lzo`, etc. _won't_ do this for you!
-Someone oughtta write a tool that can extract these things for you...
-
-,,,
-
-## What's rootfs
-
-* A special tmpfs that's always mounted
-* Kind of like PID 1: always there, can't be killed
-
-> "You can't unmount rootfs for approximately the same reason you can't kill
-> the init process; rather than having special code to check for and handle an
-> empty list, it's smaller and simpler for the kernel to just make sure certain
-> lists can't become empty."
-
-[Documentation/filesystems/ramfs-rootfs-initramfs.txt]
-(https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt)
+Note: There's always a minimal initramfs embedded into the kernel, because
+there's always a rootfs (see below).
 
 ,,,
 
@@ -117,6 +101,65 @@ Yes.¹
 Note: _initrd_ technically refers to an older implementation of this idea, where
 the image needed to be an _uncompressed filesystem image_ (usually ext2). But
 unless you're dealing with 2.4.x kernels this isn't relevant.
+
+,,,
+
+## So it's just `cpio`?
+
+Basically! With two important notes:
+
+1. Kernel only supports some compression algorithms
+   * kernel 3.18: `gzip`, `bzip2`, `lzma`, `xz`¹, `lzo`, `lz4`²
+   ```
+   ¹xz --check=crc32 --lzma2=dict=1MiB
+   ²lz4 -l
+   ```
+2. Kernel will happily use *concatenated* images
+   * Even if they have totally different compression!
+   * Makes adding files really easy...
+   ```
+   cat new-stuff.cpio initrd.img > new-initrd.img
+   ```
+   * ...but current tools don't handle extraction well.
+
+Note: `lsinitrd(1)`, at least, can correctly list and/or extract files from
+concatenated cpio images. Sure would be nice if there was a tool that would
+split/decompress the image to a plain cpio stream though..
+
+,,,
+
+## What's rootfs?
+
+* A special tmpfs that's always mounted
+* Kind of like PID 1: always there, can't be unmounted
+* The [kernel docs][kdoc] say:
+
+> You can't unmount rootfs for approximately the same reason you can't kill
+> the init process; rather than having special code to check for and handle an
+> empty list, it's smaller and simpler for the kernel to just make sure certain
+> lists can't become empty.
+
+[kdoc]: https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt
+
+,,,
+
+## So where does it go?
+
+When we `switch_root` to your real root filesystem, we:
+
+1. move real root to `/`
+2. delete everything in rootfs
+3. start real `init`
+
+So it's empty and hidden by your real root, but still there:
+```
+[root@metroid ~]# grep rootfs /proc/mounts
+rootfs / rootfs rw,seclabel 0 0
+```
+
+Note: yes, it happens in that order. Tricky!
+Also note that dracut might save a copy of itself before rootfs gets deleted.
+More on these later.
 
 ---
 
@@ -131,11 +174,11 @@ _PLUS:_ a big heap of shell scripts!!
 ## Broad overview
 
 1. Start `systemd`
-1. Start `udevd`
-1. Probe devices (`udevadm trigger`)
-1. _Mainloop:_ Set up devices as they appear
-1. Mount root filesystem at `/sysroot`
-1. Pivot to new root and start real `init`
+2. Start `udevd`
+3. Probe devices (`udevadm trigger`)
+4. _Mainloop:_ Set up devices as they appear
+5. Mount root filesystem at `/sysroot`
+6. Switch to new root and start real `init`
 
 ,,,
 
@@ -155,7 +198,7 @@ cleanup        | Clean up temporary files
 
 # That doesn't sound complicated
 
-<!-- THAT'S THE END -->
+<!-- THAT'S THE END (SO FAR) -->
             </script>
             </section>
             </div>
