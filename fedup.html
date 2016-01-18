@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+        <title>System Upgrades: past, present, and future</title>
+        <link rel="stylesheet" href="reveal.js/css/reveal.css">
+        <link rel="stylesheet" href="reveal.js/css/theme/black.css" id="theme">
+        <!-- Code syntax highlighting -->
+        <link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
+
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+            <section data-separator="^\n---\n"
+                     data-separator-vertical="^\n,,,\n"
+                     data-separator-notes="^NOTE:"
+                     data-charset="utf-8"
+                     data-markdown>
+            <script type="text/template">
+
+<!-- MARKDOWN HERE, YALLLLLL -->
+
+# System Upgrades
+## past, present, and future
+
+Will Woods &lt;wwoods@redhat.com&gt;
+
+Installer Team engineer
+
+---
+
+## The one-slide version
+
+* RPM upgrades are terrible
+* `dnf system-upgrade` is the most sensible way to do them
+
+---
+
+## How system upgrades work
+
+Two styles of upgrade: **Offline** and **Live**.
+
+1. **Offline**: Upgrade process runs from outside the system
+  * `anaconda`, `preupgrade`, `fedup`
+2. **Live**: Upgrade process runs inside the running system
+  * `apt-get dist-upgrade`, `yum`-based upgrades
+
+,,,
+
+### Offline: pro and con
+
+* `+` Works without network (secure facilities, etc.)
+* `+` Installer media can handle installs + upgrades
+* `+` One download can upgrade many systems
+* `+` System is offline (backup/restore, migrate filesystems, etc.)
+
+* `-` Larger download than necessary
+* `-` CD/DVD media is sloooowwwww
+* `-` Still have to install updates after upgrade
+* `-` **Difficult to correctly identify system to be upgraded**
+
+,,,
+
+### Live: pro and con
+
+* `+` Easy to watch the upgrade in progress
+* `+` Only download the packages needed for upgrade
+* `+` One less reboot
+* `+` Apply updates during upgrade
+
+* `-` Can't migrate filesystems etc.
+* `-` **Weird, complex bugs when you upgrade things in use**
+
+---
+
+## Olden times: `anaconda` upgrades
+
+Just boot up the install CDROM!
+
+* Download + burn all 5 CD images
+
+~or~
+
+* Boot `netinst.iso` and hope everything downloads OK!
+
+---
+
+## `anaconda` upgrades: they suck
+
+* No updates
+* Bad at finding the root partition
+* Burnt media is unreliable and sloooowww
+* Network upgrades: no wireless, crash if there's a bad mirror
+
+---
+
+## `preupgrade`: a weird hybrid
+
+* download boot/installer images
+* download all the packages *beforehand* (with updates!)
+* set up system to boot `anaconda`, plus a kickstart
+* reboot and upgrade!
+
+---
+
+### `preupgrade`: it also sucks
+
+* Need to save boot images somewhere the bootloader can handle (like `/boot`)
+* Still no guarantee that boot images can mount your disk(s)
+* Makes the installer *even more* complicated
+* Changing the bootloader is actually kind of unreliable
+
+---
+
+## `fedup`: a separate upgrade tool
+
+* Instead of downloading a 200MB installer image, provide a simple ~10MB initrd
+  (`fedup-dracut`) that just installs packages.
+* Add kernel+initrd using `new-kernel-package`
+* Boot new release's kernel + initrd + userspace
+* Let *existing* system set up disks like normal, then
+* Switch *back* to `fedup-dracut`, keeping disks mounted
+
+---
+
+## `fedup`: almost didn't suck
+
+* `upgrade.img` bloats install images / trees
+* Generic initrd can't always set up your system correctly
+* The switch-back breaks `systemd` in horrible ways
+
+---
+
+## What's wrong with `fedup`?
+
+* Python 2 only
+* Uses `yum`, not DNF
+* Doesn't always boot your system correctly
+* Uses `systemd` in a _undocumented_, _unsupported_, and _broken_ way
+
+---
+
+
+## Enter `dnf system-upgrade`
+
+* Basically just `dnf upgrade --releasever=23 --offline`
+* `systemd` handles the "offline" bit for us
+* `dnf` handles everything else
+
+,,,
+
+## `dnf system-upgrade`
+
+* Python 2 + Python 3
+* DNF plugin (`dnf-plugin-system-upgrade`)
+* Doesn't touch your kernel/initrd
+* Uses `systemd` [Offline Updates] (like `pk-offline-updates`)
+
+on github: [rpm-software-management/dnf-plugin-system-upgrade]
+
+[rpm-software-management/dnf-plugin-system-upgrade]: https://github.com/rpm-software-management/dnf-plugin-system-upgrade
+[Offline Updates]: http://www.freedesktop.org/wiki/Software/systemd/SystemUpdates/
+
+---
+
+## `dnf system-upgrade`: mostly doesn't suck
+
+* Three kinds of problems:
+  * `dnf` bugs
+  * `dnf` plugin limitations
+  * Everything Else
+
+---
+
+## RPM upgrades will always suck
+
+* Insane amount of I/O
+* Huge disk requirements
+* RPM scriptlets are totally unpredictable
+
+---
+
+## TODO: how can we do better?
+
+---
+
+## TODO: how do other OSes handle this?
+
+* OS X? Windows?
+* iOS? Android?
+* Other Linux distros?
+* Containers??
+
+---
+
+THE END
+
+thank.
+
+---
+            </script>
+            </section>
+            </div>
+        </div>
+        <script src="reveal.js/lib/js/head.min.js"></script>
+        <script src="reveal.js/js/reveal.js"></script>
+        <script>
+            // Config!!!! YES
+            Reveal.initialize({
+                width: 1200,
+                height: 600,
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+                transition: 'slide',
+                dependencies: [
+                    { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
+                    { src: 'reveal.js/plugin/notes/notes.js', async: true }
+                ]
+            });
+        </script>
+    </body>
+</html>
