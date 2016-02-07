@@ -116,12 +116,12 @@ Just boot up the install CDROM!
 
 ## `fedup`: a separate upgrade tool
 
-* Instead of downloading a 200MB installer image, provide a simple ~10MB initrd
-  (`fedup-dracut`) that just installs packages.
-* Add kernel+initrd using `new-kernel-package`
-* Boot new release's kernel + initrd + userspace
-* Let *existing* system set up disks like normal, then
-* Switch *back* to `fedup-dracut`, keeping disks mounted
+* `dracut` initrd + code to handle upgrades = `upgrade.img`
+    * only ~10MB!
+* Add kernel+initrd using standard tool (`new-kernel-package`)
+* Boot _new release's_ kernel + userspace
+* Let _existing system_ set up disks like normal, then
+* Switch _back_ to `fedup-dracut`, keeping disks mounted
 
 ---
 
@@ -163,14 +163,20 @@ on github: [rpm-software-management/dnf-plugin-system-upgrade]
 [rpm-software-management/dnf-plugin-system-upgrade]: https://github.com/rpm-software-management/dnf-plugin-system-upgrade
 [Offline Updates]: http://www.freedesktop.org/wiki/Software/systemd/SystemUpdates/
 
+,,,
+
+## What about fs migration etc?
+
+* Handle it like [`usrmove`]
+
 ---
 
-## `dnf system-upgrade`: mostly doesn't suck
+## `dnf system-upgrade`: pobody's nerfect
 
 * Three kinds of problems:
   * `dnf` bugs
   * `dnf` plugin limitations
-  * Everything Else
+  * Everything Else about RPM
 
 ---
 
