@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+        <title>Driver Updates Disks Done Quick</title>
+        <link rel="stylesheet" href="reveal.js/css/reveal.css">
+        <link rel="stylesheet" href="reveal.js/css/theme/black.css" id="theme">
+        <!-- Code syntax highlighting -->
+        <link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
+
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+            <section data-separator="^\n---\n"
+                     data-separator-vertical="^\n,,,\n"
+                     data-separator-notes="^NOTE:"
+                     data-charset="utf-8"
+                     data-markdown>
+            <script type="text/template">
+
+<!-- MARKDOWN HERE, YALLLLLL -->
+
+# Driver Update Disks
+## A quick-and-dirty overview
+
+Will Woods &lt;wwoods@redhat.com&gt;
+
+Installer Team engineer
+
+---
+
+## The one-slide version
+
+* The installer accepts Driver Updates Disks! (DUDs)
+* Use them to load updated drivers during install!
+* `inst.dd=`, or `driverdisk` kickstart command
+    * _or_: autoload from device named `OEMDRV`
+    * _or_: `inst.dd` for interactive menu
+
+---
+
+## What is a DUD?
+
+* Just a `.iso` image
+* Contains special yum repos
+* Which contain special RPMs
+* Which contain... drivers!!
+
+---
+
+## What's a DUD do?
+
+The installer..
+
+1. Reads the DUD
+2. Finds drivers compatible with the running kernel
+3. Loads them (all of them!)
+4. Installs them onto the target system
+
+---
+
+## Why use a DUD?
+
+* Disks on an unsupported disk controller
+* Need to use unsupported NIC during install
+* Really just _love_ replacing default drivers
+
+---
+
+## Preparing a DUD
+
+* **Disk:** burn CDROM, `.iso` on USB key, etc.
+* **Network:** stick the `.iso` on a webserver, NFS, etc.
+
+(see the [RHEL Install Guide] for details)
+
+[RHEL Install Guide]: https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Installation_Guide/chap-driver-updates-x86.html
+
+---
+
+## Telling the installer
+
+* `inst.dd=<URL>`
+    * URL: [http|https|ftp|nfs]://host.tld/path/to/mydud.iso
+* `inst.dd=hd:<DISK>`
+    * `/dev/sda`: not great
+    * `/dev/cdrom`: maybe?
+    * `LABEL=FLASH`: much better
+* `inst.dd=file:<PATH>`
+    * embed in initrd
+
+---
+
+## Autodetection
+
+* Label the filesystem `OEMDRV`
+* Equivalent to `inst.dd=hd:LABEL=OEMDRV`
+    * except the device has to appear in 0.5s or less
+
+---
+
+## Interactive mode!
+
+* Boot with just `inst.dd`
+* Pick block device from menu
+* Pick `.iso` from menu (if needed)
+* Pick driver(s) from menu
+
+---
+
+## Implementation details
+
+* You don't want to know
+
+---
+
+## Best Practices
+
+* You probably don't want to use this
+* If you must use it, consult the [RHEL Install Guide]
+
+[RHEL Install Guide]: https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Installation_Guide/chap-driver-updates-x86.html
+
+
+---
+
+## Making your own DUD
+
+* Ugghhhhhhhhhhh
+* Don't
+* Get your driver into the upstream kernel
+
+---
+
+## No really I want to make my own
+
+* Talk to Red Hat
+* No public tools for making DUDs
+* [`mkdud.py`] or [`anaconda` source] for the insatiably curious
+
+[`mkdud.py`]: https://github.com/rhinstaller/anaconda/blob/f23-branch/tests/lib/mkdud.py
+[`anaconda` source]: https://github.com/rhinstaller/anaconda
+
+---
+
+# THE END
+
+## thank.
+
+<wwoods@redhat.com>/[@willrad](https://twitter.com/willrad)
+
+---
+            </script>
+            </section>
+            </div>
+        </div>
+        <script src="reveal.js/lib/js/head.min.js"></script>
+        <script src="reveal.js/js/reveal.js"></script>
+        <script>
+            // Config!!!! YES
+            Reveal.initialize({
+                width: 1200,
+                height: 600,
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+                transition: 'slide',
+                dependencies: [
+                    { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
+                    { src: 'reveal.js/plugin/notes/notes.js', async: true }
+                ]
+            });
+        </script>
+    </body>
+</html>
