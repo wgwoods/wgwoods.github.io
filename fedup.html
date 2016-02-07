@@ -165,13 +165,21 @@ on github: [rpm-software-management/dnf-plugin-system-upgrade]
 
 ,,,
 
-## What about fs migration etc?
+## But... migration??
 
-* Handle it like [`usrmove`]
+Handle it like [UsrMove]
+
+1. Write a `dracut` module (e.g. [`convertfs`])
+2. Your module goes into the newly-built initrd
+3. Migration happens at first boot after upgrade
+
+[UsrMove]: https://fedoraproject.org/wiki/Features/UsrMove
+[`convertfs`]: https://github.com/haraldh/dracut/tree/044/modules.d/30convertfs
 
 ---
 
-## `dnf system-upgrade`: pobody's nerfect
+## `dnf system-upgrade`
+### it.. almost doesn't suck
 
 * Three kinds of problems:
   * `dnf` bugs
@@ -182,13 +190,45 @@ on github: [rpm-software-management/dnf-plugin-system-upgrade]
 
 ## RPM upgrades will always suck
 
+This isn't what RPM was designed for.
+
 * Insane amount of I/O
 * Huge disk requirements
 * RPM scriptlets are totally unpredictable
+    * (time? disk? progress??)
 
 ---
 
-## TODO: how do other OSes handle this?
+## System Upgrades != Updates
+
+Mostly the same code, but:
+
+* Different user expectations (big changes! new code!)
+* Different user experience (long time.. what's happening?)
+
+---
+
+## How could we do better?
+
+* Better UI: switch progress screen
+* More feedback (scriptlet progress)
+* Snapshot before, restore on crash
+* Notify user about problems
+
+---
+
+## Research: crazy-go-nuts!
+
+### how else could we do this?
+
+* Deploy /usr as an immutable image
+* Apply binary diff to new root
+* Atomic-style COW snapshot
+* Other stuff - layering! Unionfs!
+
+,,,
+
+### how do other OSes handle this?
 
 * OS X? Windows?
 * iOS? Android?
@@ -197,24 +237,14 @@ on github: [rpm-software-management/dnf-plugin-system-upgrade]
 
 ---
 
-## TODO: how can we do better?
+# THE END
 
-* Deploy /usr as an immutable image
-* Atomic-style COW snapshot
-* Apply binary diff to new root
-* Other stuff - layering! Unionfs!
+## thank you, friends
 
-,,,
+* slides: https://wgwoods.github.io/fedup.html
+* email: <wwoods@redhat.com>
+* twitter: [@willrad](https://twitter.com/willrad)
 
-## TODO: Future of Linux distros
-
----
-
-THE END
-
-thank.
-
----
             </script>
             </section>
             </div>
