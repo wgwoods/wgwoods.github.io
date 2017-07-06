@@ -44,8 +44,11 @@ Here's a high-level overview of the tasks handled by scriptlets.
 5. Creating certificates or other system-specific data
     * Creating SSL certs (`cyrus-imapd`, many others)
     * `/etc/machine-id`
-6. Setting SELinux booleans etc.
-    * can we set these from the outside? or is this a firstboot thing?
+6. Setting SELinux booleans, firewall rules, etc.
+    * In general: certain software needs modifications to some system settings
+        * SELinux booleans enabled/disabled
+        * Firewall rules (open/close ports, etc)
+        * (others?)
 
 Another major item is config/data migration, but that's only relevant when
 handling updates, so we'll skip that for now.
