@@ -101,7 +101,28 @@ Output=/etc/ld.so.cache
 * Create empty placeholder file
 * Copy a default configuration into place
 
-All of these can be handled by using `tmpfiles.d` snippets.
+A lot of these can be handled by using `tmpfiles.d` snippets.
+
+### Handling `/var`
+
+_(XXX TODO: finish research and complete this section)_
+
+* `/var/run` used to be a regular directory
+* Now it's a symlink to `/run`, which is a tmpfs mounted during early boot
+    * Also `/var/lock` -> `/run/lock`
+    * see [introducing `/run`] for history and details
+* Some packages want to put files or directories there
+* But they're all temporary, by definition
+* So they need to be shipped _as tmpfiles.d snippets_
+* ostree deployments don't include `/var`
+* `rpm-ostree compose` converts `/var` contents to a set of `tmpfiles.d` snippets
+* That's probably what we should do too
+* hilarious side note: some packages still package things in `/var/run`
+    * `pulseaudio.spec` even has this comment:
+    * `# /var/lib/pulse seems unused, can consider dropping it?  -- rex`
+    * shouts to Rex Dieter, who def knows what's up
+
+[introducing `/run`]: https://lwn.net/Articles/436012/
 
 ## 5. `sysconfig`
 
