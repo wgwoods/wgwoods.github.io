@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+        <title>RPM dependency abuse</title>
+        <link rel="stylesheet" href="reveal.js/css/reveal.css">
+        <link rel="stylesheet" href="reveal.js/css/theme/black.css" id="theme">
+        <!-- Code syntax highlighting -->
+        <link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
+
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+            <section data-separator="^\n---\n"
+                     data-separator-vertical="^\n,,,\n"
+                     data-separator-notes="^NOTE:"
+                     data-charset="utf-8"
+                     data-markdown>
+            <script type="text/template">
+
+<!-- MARKDOWN HERE, YALLLLLL -->
+
+# RPM dependency abuse
+
+Will Woods &lt;wwoods@redhat.com&gt;
+
+Senior Software Engineer / RPM rant-about-er
+
+---
+
+## DISCLAIMERS
+
+* Nothing in this talk is Official Red Hat Strategy, or representative of
+  anything other than my own fevered imagination
+* I wrote these slides 2 hours ago
+* Welcome / forgive me
+
+---
+
+## tl;dr
+
+* RPM dependencies (and metadata, and scriptlets) are insanely complicated
+* We keep pushing more complexity into them
+* All of this runs as root
+* We don't really know how it all works
+* This is probably Bad
+
+---
+
+## The basic idea
+
+* Every package Provides stuff
+* Other packages can Require that stuff
+* When installing A, if A requires B, also install B
+* That's it
+
+---
+
+## Versions!
+
+* Packages all provide NAME = VERSION
+* We compare versions so you can Require: NAME >= x.y
+
+---
+
+## Basic RPM dependencies
+
+* Requires: "I need PACKAGE to run"
+* Obsoletes: "I replace PACKAGE"
+* Conflicts: "I cannot be installed in the same system as PACKAGE"
+
+---
+
+## Extended dependencies
+
+* BuildRequires:
+* ~TestRequires:~
+
+---
+
+## Weak Dependencies
+
+
+* Recommends:
+* Suggests:
+
+---
+
+## Reverse Weak Dependencies
+
+* Supplements:
+* Enhances:
+
+---
+
+## Boolean Dependencies
+
+* Requires: (pkgA and pkgB)
+* Requires: (pkgA >= 1.3 or pkgB)
+* Requires: (pkgA if pkgB else pkgC)
+* Requires: (pkgA with pkgA-extras)
+* Requires: (pkgA without thingy)
+* Requires: (pkgA-backend-funky unless pkgA-backend- else pkgB)
+
+---
+
+## Is this Turing complete?
+
+* `dpu-ax-0-0` .. `dpu-ax-255-255`
+* `dpu-insn-1-set-ax-0-37` Requires: `dpu-ax = 0-37`
+* `dpu-insn-2-incr-ax` Requires:
+*   `((dpu-ax-0-1 if dpu-ax = 0-0) or (dpu-ax-0-2 if dpu-ax = 0-1) or ...`
+* `dpu-insn-X` Obsoletes: `dpu-insn < X`
+
+---
+
+## Is this dangerous?
+
+* Obsoletes: gzip
+* Requires: gzip
+* `%post`
+
+---
+
+## What about...
+
+    %post
+    $(rpm -q --changelog otherpackage | grep beefy | cut -d' ' -f2-)
+
+
+---
+
+## Maybe we should be thinking about:
+
+
+`$REQUIRE_TYPE $REQUIRE_PURPOSE $COMPONENT_EXPR`
+
+
+---
+
+## Different require types and purposes
+
+* Require-Runtime
+* Require-Test
+
+---
+
+## COMPONENT_EXPR
+
+A little mini-language spec for matching components
+
+---
+
+## LET'S WRITE SOME DAMN SPECS FOR THIS STUFF
+
+---
+
+# THE END
+
+## thank.
+
+* <wwoods@redhat.com>
+* [@__wwoods__](https://twitter.com/__wwoods__)
+* https://weldr.io/
+* These slides: https://wgwoods.github.io/rpm-dependency-abuse.html
+
+            </script>
+            </section>
+            </div>
+        </div>
+        <script src="reveal.js/lib/js/head.min.js"></script>
+        <script src="reveal.js/js/reveal.js"></script>
+        <script>
+            // Config!!!! YES
+            Reveal.initialize({
+                width: 1200,
+                height: 600,
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+                transition: 'slide',
+                dependencies: [
+                    { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
+                    { src: 'reveal.js/plugin/notes/notes.js', async: true }
+                ]
+            });
+        </script>
+    </body>
+</html>

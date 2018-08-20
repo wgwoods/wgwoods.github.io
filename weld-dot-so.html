@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+        <title>weld.so and beyond</title>
+        <link rel="stylesheet" href="reveal.js/css/reveal.css">
+        <link rel="stylesheet" href="reveal.js/css/theme/black.css" id="theme">
+        <!-- Code syntax highlighting -->
+        <link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
+
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+            <section data-separator="^\n---\n"
+                     data-separator-vertical="^\n,,,\n"
+                     data-separator-notes="^NOTE:"
+                     data-charset="utf-8"
+                     data-markdown>
+            <script type="text/template">
+
+<!-- MARKDOWN HERE, YALLLLLL -->
+
+# weld.so and beyond
+### the past, present, and future of image builds
+
+Will Woods &lt;wwoods@redhat.com&gt;
+
+weldr.io tech lead
+
+---
+
+## DISCLAIMERS
+
+* Nothing in this talk is Official Red Hat Strategy, or representative of
+  anything other than my own fevered imagination
+* I wrote these slides 2 hours ago
+* Welcome / forgive me
+
+---
+
+## tl;dr: We Could Do Great Stuff
+
+* Every process in its own dynamically-constructed container
+* OS-wide CI/CD
+* Security, efficiency, reliability, flexibility, &c.
+* Make working on a Linux distro fun again?
+* All we need to do is fix a couple of things...
+
+---
+
+## What's `weld` / `weldr`
+
+* WELD: **W**ELD **E**xperimental **L**inux **D**istribution
+* WELDR: **W**ELDR **E**xperimental **L**inux **D**istribution, **R**AW
+    * **R**ecursive **A**cronym for **W**ELDR
+* R&D / bootstrapping a new kind of linux distro
+
+---
+
+## The way we build images now
+
+* Image builds are slow, hard and unreliable
+* Endless arguments over "minimal"
+* AutoQA / depcheck / israwhidebroken
+* No nightly builds of Fedora (36-hour composes?)
+* Endless layers of code & metadata to work around problems
+
+_[a dumpster fire in a toilet store on Clown Island]_
+
+---
+
+## But why do we have all these problems
+
+* RPM: the cutting edge of 1995
+* Complex behavior, no specification
+* Hard to extend
+* Non-deterministic behavior everywhere
+
+---
+
+## Yes Will, we know this already
+
+* People are working around the problems
+* What if we actually _fixed_ them?
+
+---
+
+## Start with a model
+
+* Project, Source, Image, Build
+* `(src, env, cmd) -> build`
+* `build = (files, metadata)`
+
+,,,
+
+## Start with a model: dependencies
+
+* list provides: `build -> {have, ...}`
+* list requires: `build -> {want, ...}`
+* resolve a dependency: want -> `{have, ...}`
+* choose a best provider: `{have, ...} -> Maybe have`
+
+---
+
+## Making image construction reliable
+
+* Resolve deps
+* Copy required package contents into place
+* Generate/fix dynamic content (if needed)
+* Ready to rock!
+
+---
+
+## Epiphany: this is basically dynamic linking
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+## Summary
+
+* A simple, reliable model
+    * Well-behaved builds
+    * Deterministic actions
+    * Data, not code
+* Magic containers, atomic updates, safety and sanity
+* We can build it together
+
+---
+
+# THE END
+
+## thank.
+
+* <wwoods@redhat.com>
+* [@willrad](https://twitter.com/willrad)
+* https://weldr.io/
+* These slides: https://wgwoods.github.io/weld-dot-so.html
+
+            </script>
+            </section>
+            </div>
+        </div>
+        <script src="reveal.js/lib/js/head.min.js"></script>
+        <script src="reveal.js/js/reveal.js"></script>
+        <script>
+            // Config!!!! YES
+            Reveal.initialize({
+                width: 1200,
+                height: 600,
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+                transition: 'slide',
+                dependencies: [
+                    { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
+                    { src: 'reveal.js/plugin/notes/notes.js', async: true }
+                ]
+            });
+        </script>
+    </body>
+</html>
