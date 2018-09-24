@@ -1,11 +1,78 @@
 # Making working system images
 
+> "Any sufficiently advanced technology is indistinguishable from magic."
+>
+> -- Arthur C. Clarke
+
 > "Sometimes magic is just someone spending more time on something than anyone
 > else might reasonably expect."
 >
 > -- R. J. Teller
 
 ## TL;DR
+
+Making a system image from packages generally involves adding the package
+contents to a new filesystem and running extra code snippets ("scriptlets")
+that generate or modify files in order to make the system actually function
+correctly.
+
+This document attempts to describe and categorize scriptlets into distinct
+categories based on what type of input they need and what type of output
+they create. We then describe the most common types of scriptlet tasks
+and propose new, efficient, machine-readable, data-driven ways to handle them.
+
+## Background and overview
+
+### Files: shipped and generated
+
+There's four categories of files that you'll find in a working system image:
+
+1. Package payloads / build artifacts (ℙ, "Pkg")
+    * independent of the rest of the system
+    * shipped as-is
+2. Generated catalogs / caches (𝔾, "Gen")
+    * determined by the rest of the system's contents
+    * can be generated after depsolve
+3. User configuration (ℂ, "Conf")
+    * determined from **user-provided data** (and the rest of the system)
+    * generated after user config is provided
+        * user config may be empty/optional!
+4. System-specific data (𝔻, "Sysdata")
+    * depend on the system hardware OR unique per-system
+
+The first category is easy - it's just unmodified package payloads.
+
+The last category cannot be handled until the first boot of the image - adding
+things like `machine-id` or ssh host keys makes a generic _image_ into a
+unique _system_.
+
+The other two categories are what we're concerned with here. This is the
+mission-critical magic that turns a heap of build output into a working system,
+and in the Fedora/RHEL world it's almost entirely handled in three places:
+RPM scriptlets, `pungi`, and `anaconda`.
+
+### An aside: moving from scripts to data
+
+The astute reader will note that our reliance on RPM scriptlets and anaconda
+magic to build images means that a large section of our mission-critical image
+build process consists of a gnarly heap of shell and Lua scripts, scattered
+across hundreds of packages and written by dozens of different authors over the
+course of a decade or more.
+
+A particularly astute reader might point out this situation is very similar to
+one that exists in a lot of older IT organizations with decades-old
+infrastructure, where everything is controlled and managed using a set of
+non-standard, home-grown scripts that are a burden to maintain and nearly
+impossible to improve.
+
+A clever Red Hatter might try to sell that IT shop on the idea of migrating
+their infrastructure to a nice, manageable set of Ansible playbooks.
+
+The most astute of readers will probably realize, at this point, that I'm
+proposing a very similar idea, but for our own gnarly-but-irreplaceable
+home-grown infrastructure.
+
+### Scriptlet Tasks
 
 Broadly speaking, there's 6 tasks required to make a filesystem composed from
 package payloads into a runnable system/container:
@@ -23,7 +90,7 @@ install/build tools (`anaconda`, `lorax`, `pungi`, `livemedia-creator`, etc.)
 This document attempts to define these tasks and propose ways to handle them
 in a declarative fashion, rather than encoding them in opaque shell scripts.
 
-## 1. `user` / `group`
+### 1. `user` / `group`
 
 * Packages should ship `sysusers.d` snippets
     * We'll need to hand-maintain a library of them until upstream starts
@@ -101,7 +168,7 @@ Output=/etc/ld.so.cache
 * Create empty placeholder file
 * Copy a default configuration into place
 
-A lot of these can be handled by using `tmpfiles.d` snippets.
+Most (all?) of these can be handled by using `tmpfiles.d` snippets.
 
 ### Handling `/var`
 
