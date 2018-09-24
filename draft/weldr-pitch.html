@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+        <title>The Weldr Pitch</title>
+        <link rel="stylesheet" href="reveal.js/css/reveal.css">
+        <link rel="stylesheet" href="reveal.js/css/theme/black.css" id="theme">
+        <!-- Code syntax highlighting -->
+        <link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
+
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+            <section data-separator="^\n---\n"
+                     data-separator-vertical="^\n,,,\n"
+                     data-separator-notes="^NOTES?:"
+                     data-charset="utf-8"
+                     data-markdown>
+            <script type="text/template">
+
+<!-- MARKDOWN HERE, YALLLLLL -->
+
+# weldr
+### A post-packaging Linux distribution
+
+Will Woods &lt;wwoods@redhat.com&gt;
+
+---
+
+## DISCLAIMERS
+
+* Nothing in this talk is Official Red Hat Strategy, or representative of
+  anything other than my own fevered imagination
+* I wrote these slides 2 hours ago
+* Welcome / forgive me
+
+---
+
+# The Gist
+
+1. RPM isn't scaling well and it's costing huge 
+2. We can fix it piece by piece; first we need to map out the pieces
+3. 
+
+---
+
+
+## RPM-based systems aren't scaling well
+
+* Number of _**source packages**_ grows exponentially
+  * New GUIs, new languages, old stuff never goes away...
+* Number of _**binary packages**_ grows exponentially
+  * More subpackage splits, variant builds (py2/py3), more arches...
+* _**Payloads**_ grow
+  * New things get added, docs get longer, higher-quality artwork...
+* _**Metadata**_ grows
+  * New dependency types, more per-file data, changelogs
+* _**Learning curve**_ grows
+  * New packaging rules, more manual steps for builds / updates...
+
+---
+
+## "So what, disk is cheap!"
+
+* We're growing faster than disks are getting cheaper
+* Container workflows intensify the problem
+* Modularity intensifies the problem
+* Compression saves disk/bandwidth... at expense of CPU time
+
+,,,
+
+TODO: model & graph:
+
+1. size of Fedora over time
+2. price of disk over time, and extrapolate
+3. total cost of using RPM-based system over time
+
+---
+
+## "Who cares if it takes a little while?"
+
+* We can't do CI/CD, barely manage nightly builds
+* Build/test cycles take days... or weeks
+* These costs are passed on to _all users_
+* _Millions of hours of developer time lost_
+
+---
+
+## "It's not _that_ complicated!"
+
+* Nobody fully understands all of RPM anymore
+* Packaging guidelines never catch up to Real Life
+* We don't go back and fix old specfiles
+* 15,000 specfiles [nc] and we're not sure what any of them do
+* Every programming language environment invents its own packaging system
+  * And they all get parts of it wrong!
+* Docker/containers are popular because _they're easier than dealing with packaging_
+  * `FROM fedora:latest` is faster and easier than building your own..
+  * ...we cache each layer because installing packages is slow
+
+_This is driving away developers and users_
+
+---
+
+_This is costing us and our users huge amounts of time and money_
+
+---
+
+## "That's just how things are!"
+
+1. Problems arise from bad tradeoffs in the RPM ecosystem.
+2. They are not inherent to the process of making a Linux distribution.
+3. We can alleviate problems by designing improved solutions for each part of that process.
+4. To fix this, we need to know what those parts are, and how they work.
+
+---
+
+## 1. Problems arise from bad tradeoffs in the RPM ecosystem.
+
+,,,
+
+1. Problem: RPM needs a new feature!
+  * Solution: add some code and extra metadata to support it
+  * Tradeoff: increases CPU / RAM / disk / bandwidth use
+2. Problem: RPM uses too much CPU / RAM / disk / bandwidth!
+  * Solution: some clever mitigation to reduce the most pressing factor
+  * Tradeoff: increases cost of one (or more) of the others
+
+_[repeat every 6 months for 20 years]_
+
+,,,
+
+* Every time we have a problem with RPM, we solve it by making RPM more complicated
+* Every solution involves a tradeoff of some kind
+* We don't know how these tradeoffs scale over time
+* None of them are ever removed
+* _Unforseen downsides eventually dominate all improvements._
+
+---
+
+## 2. They are not inherent to the process of making a Linux distribution.
+
+,,,
+
+1. How much of each package build is actually spent in `%build`?
+2. How much of the metadata downloaded is actually used when finding updates?
+3. How much data in downloaded updates is different than what's already on disk?
+4. How much of a system install is actually spent copying files to disk?
+5. How much time during a system upgrade is actually spent installing new versions of files?
+
+,,,
+
+Answers:
+
+1. (No good data on this; it's hard to get this from koji, which is its own problem)
+2. Dependency metadata makes up about 2.3% of all metadata
+3. 75-90% of data shipped in updates is unchanged from GA (varies by release)
+4. weldr's prototype exporter built system images in <2% of the time of a normal install
+5. Atomic system updates generally take <1% of the time (TODO run tests to back this up)
+
+_(TODO: publish & link to tools/data that gathered these numbers)_
+
+,,,
+
+**90-99%** of all common operations is wasted overhead.
+
+_We pass this waste on to customers._
+
+_They want a better way._
+
+---
+
+## 3. We can alleviate problems by designing improved solutions for each part of that process.
+
+,,,
+
+* It's Open Source, y'all
+* Maintainers will help because they all want this to work better
+  * Scriptlet reform efforts have been enthusiastic
+* Users & operators will switch to new systems if there's compelling advantages
+  * Look at adoption of Docker, `git`, etc.
+* Designing a new system does not mean destroying the old one
+  * RPM isn't going anywhere, it will all keep working
+* We can build systems with legacy support to help people transition
+  * like `systemd` and SysV initscripts
+
+NOTES:
+Yo, these are my speaker notes.
+
+---
+
+## 4. To fix this, we need to know what those parts are, and how they work.
+
+,,,
+
+## "Can't we just fix RPM?"
+
+How??
+
+* No specifications, no format versioning, no stable API
+* We can't remove or replace anything without breaking the world
+* We can only add extra layers of code/metadata outside RPM
+* This is why we're having problems scaling in the first place
+
+---
+
+## So what's the plan?
+
+1. Map out the components of the RPM ecosystem
+  * Pay attention to _why_ each piece is there!
+2. Design and build better solutions for each piece, one by one
+  * Ensure each piece is either backward-compatible or opt-in
+  * Also ensure each piece is well-documented and extensible
+3. Move away from legacy workflows when possible
+4. Hooray, we built a new system without burning it all down
+
+---
+
+## 1. Map out the components of the RPM ecosystem
+
+(TODO: drawing of the Build Loop, details on each piece)
+
+,,,
+
+## RPM-centered view
+
+1. RPM macros
+  * **Build Options**
+2. Source RPM: tarball, patches, spec
+  * **Sources**, **Component Metadata**, **Build Instructions**
+3. Koji: builds & buildroots
+  * **Build Environment**, **Build Logs**, **Build Metadata**
+4. Binary RPM: headers & payload
+  * payload: **Build Artifacts**, **Artifact Metadata**
+  * headers: **Signatures**, **Dependency Metadata**, **Changelog**
+5. Yum/DNF Repository: RPMs + repodata
+  * reformatted metadata, **Metadata Indexes**
+
+---
+
+## Rebuild it all, one piece at a time
+
+(TODO: format like a tech tree :D)
+
+* Fix package install scriptlets
+* New **Binary Artifact** repo
+* New formats for **Build Instructions** and **Dependency Metadata**
+* New **Source** repositories
+
+,,,
+
+TODO: go one-by-one through the pieces, examine problems (inefficiency,
+complexity, inflexibility), then propose other solutions
+
+---
+
+## Fix scriptlets
+
+* They need to be _well-behaved_, if not _deterministic_
+
+---
+
+## Binary Artifact Repo
+
+* Directory full of RPMs
+  * Size grows exponentially
+  * Attempt to control size with heavy compression..
+  * This adds time/CPU overhead to every package installation!
+
+
+---
+
+
+---
+
+# THE END
+
+## thank you.
+
+* <wwoods@redhat.com>
+* [@__wwoods__](https://twitter.com/__wwoods__)
+* https://weldr.io/
+* These slides: https://wgwoods.github.io/weldr-pitch.html
+
+            </script>
+            </section>
+            </div>
+        </div>
+        <script src="reveal.js/lib/js/head.min.js"></script>
+        <script src="reveal.js/js/reveal.js"></script>
+        <script>
+            // Config!!!! YES
+            Reveal.initialize({
+                width: 1200,
+                height: 600,
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+                transition: 'slide',
+                dependencies: [
+                    { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
+                    { src: 'reveal.js/plugin/notes/notes.js', async: true }
+                ]
+            });
+        </script>
+    </body>
+</html>
+<!-- vim: set syntax=markdown: -->
