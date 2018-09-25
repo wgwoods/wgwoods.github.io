@@ -38,11 +38,25 @@ Will Woods &lt;wwoods@redhat.com&gt;
 
 ---
 
-# The Gist
+# tl;dr
 
-1. RPM isn't scaling well and it's costing huge 
-2. We can fix it piece by piece; first we need to map out the pieces
-3. 
+1. The RPM ecosystem doesn't scale well for modern workloads
+2. This is costing us all huge amounts of time & money
+3. No silver bullet - systemic problems require systemic solutions
+4. Map the RPM ecosystem, find problems, design better solutions
+5. Build next-gen system one piece at a time
+
+NOTES:
+the "RPM ecosystem" means not just `rpm` and `rpmbuild` and specfiles and
+such, but the entire ecosystem of tools and data built around it - `yum` and
+`dnf`, `comps.xml` and `repodata/`, `dist-git`, `koji`, and so on...
+
+Also, nobody owns (or understands!) the whole system, so no systemic solutions
+have been proposed, so we've come to accept the problems as a necessary part of
+the system. THEY AREN'T.
+
+Building one piece at a time allows us to make actual real-world improvements
+to the existing system along the way
 
 ---
 
@@ -65,17 +79,41 @@ Will Woods &lt;wwoods@redhat.com&gt;
 ## "So what, disk is cheap!"
 
 * We're growing faster than disks are getting cheaper
+* Wasted I/O / Bandwidth is what really costs time & money
 * Container workflows intensify the problem
-* Modularity intensifies the problem
 * Compression saves disk/bandwidth... at expense of CPU time
+
+NOTES:
+
+Disk space - data at rest - isn't the biggest problem. But RPM's "wire
+protocol" is just.. fetching the on-disk data.
+
+All the repodata is duplicated in the RPM headers, and the RPM headers are
+stored uncompressed. So we download every piece of metadata at least twice, in
+two different formats, and then we write that metadata into the local rpmdb in
+a third format. (TODO check: dnf caches it too right?)
+
+Container workflows make the problem worse because you end up building
+hundreds or thousands of small systems, multiplying all previous waste
+
+compression will not save us; we're already using the best compression
+algorithm we can find and all it's done has shifted problems around so now
+every compose / update / install takes much longer
 
 ,,,
 
-TODO: model & graph:
+TODO: model & graph growth of these over time..
 
-1. size of Fedora over time
-2. price of disk over time, and extrapolate
-3. total cost of using RPM-based system over time
+1. Size of Fedora (total data and package count)
+  * repos (+ updates) & typical systems ("minimal", default)
+2. Data/metadata redundancy, package header size (per file)
+3. price of disk
+4. typical network speed
+
+And extrapolate trends for..
+
+1. Time for common operations
+2. Total cost of using RPM-based system
 
 ---
 
@@ -86,6 +124,14 @@ TODO: model & graph:
 * These costs are passed on to _all users_
 * _Millions of hours of developer time lost_
 
+,,,
+
+TODO:
+
+* check if we get Rawhide nightlies
+* data/cite for how long composes take now
+
+
 ---
 
 ## "It's not _that_ complicated!"
@@ -94,17 +140,37 @@ TODO: model & graph:
 * Packaging guidelines never catch up to Real Life
 * We don't go back and fix old specfiles
 * 15,000 specfiles [nc] and we're not sure what any of them do
-* Every programming language environment invents its own packaging system
-  * And they all get parts of it wrong!
 * Docker/containers are popular because _they're easier than dealing with packaging_
-  * `FROM fedora:latest` is faster and easier than building your own..
-  * ...we cache each layer because installing packages is slow
 
-_This is driving away developers and users_
+NOTE: Every programming language environment invents its own packaging system.
+And they all get parts of it wrong!  TODO: find citations for npm screwups,
+cargo problems, etc.
+
+,,,
+
+## Containers:
+### because we can't make RPM reliable or safe
+
+Making a custom image:
+```
+FROM fedora:latest
+RUN dnf -y update && dnf -y install ...
+...
+RUN dnf -y erase ...
+```
+..then tag, push, etc.
+
+NOTES: First, this process is non-deterministic, because you'll get different
+updates different days. So we cache the output and bless the ones that work,
+because _we accept that sometimes they won't_.
+
+Second, think about all the wasted I/O in installing (and then removing) the
+same packages across every image build..
+
 
 ---
 
-_This is costing us and our users huge amounts of time and money_
+_All of this is driving away developers and costing us and our users huge amounts of time and money_
 
 ---
 
@@ -186,9 +252,6 @@ _They want a better way._
 * We can build systems with legacy support to help people transition
   * like `systemd` and SysV initscripts
 
-NOTES:
-Yo, these are my speaker notes.
-
 ---
 
 ## 4. To fix this, we need to know what those parts are, and how they work.
@@ -216,6 +279,20 @@ How??
 3. Move away from legacy workflows when possible
 4. Hooray, we built a new system without burning it all down
 
+,,,
+
+## Goal of Projet WELDR:
+
+Design and build an RPM-equivalent ecosystem that's..
+* secure
+* reliable
+* efficient
+* fast
+* and easy to use.
+
+NOTE: These goals are in priority order - reliability is more important than
+speed - but they are all goals and none of them excludes the other(s).
+
 ---
 
 ## 1. Map out the components of the RPM ecosystem
@@ -238,6 +315,8 @@ How??
 5. Yum/DNF Repository: RPMs + repodata
   * reformatted metadata, **Metadata Indexes**
 
+NOTE: TODO this slide will need some design work
+
 ---
 
 ## Rebuild it all, one piece at a time
@@ -252,7 +331,7 @@ How??
 ,,,
 
 TODO: go one-by-one through the pieces, examine problems (inefficiency,
-complexity, inflexibility), then propose other solutions
+complexity, inflexibility, insecurity), then propose other solutions
 
 ---
 
@@ -269,20 +348,16 @@ complexity, inflexibility), then propose other solutions
   * Attempt to control size with heavy compression..
   * This adds time/CPU overhead to every package installation!
 
-
----
-
-
 ---
 
 # THE END
 
 ## thank you.
 
-* <wwoods@redhat.com>
-* [@__wwoods__](https://twitter.com/__wwoods__)
-* https://weldr.io/
-* These slides: https://wgwoods.github.io/weldr-pitch.html
+* email: <wwoods@redhat.com>
+* twitter: [@\_\_wwoods\_\_](https://twitter.com/__wwoods__)
+* project site: https://weldr.io/
+* these slides: https://wgwoods.github.io/draft/weldr-pitch.html
 
             </script>
             </section>
@@ -312,4 +387,4 @@ complexity, inflexibility), then propose other solutions
         </script>
     </body>
 </html>
-<!-- vim: set syntax=markdown: -->
+<!-- vim: set syntax=markdown tw=100: -->
